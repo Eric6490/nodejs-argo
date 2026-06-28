@@ -14,10 +14,18 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 【核心新增】：在这里自动将你的大写用户名转为全小写，存入环境变量
+      # 【改用官方脚本进行转换】：绝对稳定，不会出现变量丢失或变空的情况
       - name: Convert owner to lowercase
-        run: |
-          echo "OWNER_LOWERCASE=${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]' >> $GITHUB_ENV
+        id: get_owner
+        uses: actions/github-script@v7
+        with:
+          script: |
+            return context.repo.owner.toLowerCase()
+          result-encoding: string
+
+      # 测试打印一下转换后的结果，方便在日志里排查
+      - name: Test Output
+        run: echo "The lowercase owner is ${{ steps.get_owner.outputs.result }}"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -38,6 +46,6 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          # 【核心修改】：视频里原本是 github.repository_owner，现在改用上面转换好的全小写 env.OWNER_LOWERCASE
+          # 【更新这里的变量读取方式】：改用上面 steps.get_owner 的输出结果
           tags: |
-            ghcr.io/${{ env.OWNER_LOWERCASE }}/dcdeploy0034:latest
+            ghcr.io/${{ steps.get_owner.outputs.result }}/dcdeploy0034:latest
